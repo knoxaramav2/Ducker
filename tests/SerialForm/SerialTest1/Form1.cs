@@ -15,45 +15,43 @@ namespace SerialTest1
     public partial class Form1 : Form
     {
         private Audio audio;
-        private Timer streamListener;
+        
+        SignalController signalController;
 
         public Form1()
         {
             InitializeComponent();
 
+            signalController = new SignalController();
+            signalController.SetResultView(viewWindow);
+            signalController.SetSerialPort(serialPort1);
+
             audio = new Audio();
-            streamListener = new Timer
-            {
-                Interval = 100
-            };
-            streamListener.Tick += new EventHandler(ListenStream);
-            streamListener.Enabled = true;
 
             KeyPreview = true;
             KeyPress += new KeyPressEventHandler(Form1_KeyPress);
-        }
 
-        private void SendMessage(String s)
-        {
-            if (!serialPort1.IsOpen)
-            {
-                try
-                {
-                    serialPort1.Open();
-                    serialPort1.Write(s);
-                    serialPort1.Close();
-                }
-                catch (Exception exc)
-                {
-                    viewWindow.Text += ("Err: Check that serial port is open\r\n" + exc.Message) +
-                        Environment.NewLine;
-                }
-            }
+            signalController.Start();
         }
 
         private void Button1_Click(object sender, EventArgs e)
         {
+            //var stream = audio.TextToAudioStream("hello maggots");
+            char[] stream = new char[4];
+            stream[0] = 'T';//SignalCodes.YELL_8;
+            stream[1] = 'H';
+            stream[2] = 'I';
+            stream[3] = '\0';
 
+            /*byte[] tStream = new byte[256];
+            for (int i = 0; i < 256; ++i)
+            {
+                tStream[i] = stream[i];
+            }*/
+
+            signalController.SendData(new string(stream));
+            //SendMessage(tStream.ToString());
+            //Console.WriteLine(tStream.ToString());
         }
 
         private void Button2_Click(object sender, EventArgs e)
@@ -61,46 +59,22 @@ namespace SerialTest1
             audio.Speek("Hello world");
         }
 
-        private void ListenStream(object sender, EventArgs e)
-        {
-            if (!serialPort1.IsOpen)
-            {
-                try
-                {
-                    serialPort1.Open();
-
-                    if (serialPort1.BytesToRead == 0)
-                    {
-                        serialPort1.Close();
-                        return;
-                    }
-
-                    string msg = serialPort1.ReadLine();
-
-                    viewWindow.Text += msg + Environment.NewLine;
-                    audio.Speek(msg);
-                    serialPort1.Close();
-
-                    //audio.Speek(read);
-                }
-                catch
-                {
-                    viewWindow.Text += "Unable to read from Arduino" + 
-                        Environment.NewLine;
-                }
-            }
-        }
-
         private void Form1_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == '\n' || e.KeyChar == '\r')
             {
-                SendMessage(commandLine.Text);
+                signalController.SendData(commandLine.Text);
                 commandLine.Text = "";
             } else if (e.KeyChar == (char) Keys.Back && commandLine.Text.Length > 0)
             {
                 commandLine.Text = commandLine.Text.Substring(0, commandLine.Text.Length - 1);
             }
+        }
+
+        private void viewWindow_TextChanged(object sender, EventArgs e)
+        {
+            viewWindow.SelectionStart = viewWindow.Text.Length;
+            viewWindow.ScrollToCaret();
         }
     }
 }

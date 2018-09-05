@@ -64,6 +64,7 @@
             this.viewWindow.Size = new System.Drawing.Size(776, 342);
             this.viewWindow.TabIndex = 1;
             this.viewWindow.Text = "";
+            this.viewWindow.TextChanged += new System.EventHandler(this.viewWindow_TextChanged);
             // 
             // button2
             // 

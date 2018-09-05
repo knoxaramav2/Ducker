@@ -1,3 +1,9 @@
+#include <Stepper.h>
+
+#include "motor.h"
+#include "audio.h"
+#include "serial_com.h"
+
 int audPin = 12;
 int ledPin = 13;
 int phoPin = A0;
@@ -14,91 +20,84 @@ char msgInActive[] = "RESPONSE : LOW\n\0";
 char argStr [256];
 char opCode;
 
+
 bool dataReceived;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
   pinMode(ledPin, OUTPUT);
   pinMode(phoPin, INPUT);
   digitalWrite(ledPin, HIGH);
-  Serial.flush();
 
   memset(argStr, 0, 256);
   opCode = 0;
   dataReceived = false;
+
+  initMotor();
+  initAudio();
+  initComms();
+  setDirection(true);
 }
 
-void receiveData(){
-  if (Serial.available() == 0) {return;}
+void handleStream(){
+  byte c = checkSerial();
+  
+  if (isInReadState()){
+    //read from stream until end marker detected
+    Serial.write("In read state\n");
+  } else if (c != 0 && c != '\n') {
+    //test byte against command codes
+    Serial.write("Checking command\n");
+    bool test = true;
 
-  int idx = 0;
-  const char endMarker = '\n';
-  char bff;
-
-  opCode = Serial.read();
-
-  while(Serial.available() > 0){
-    bff = Serial.read();
-
-    if (bff == endMarker){
-      argStr[idx] = 0;
-      dataReceived = true;//data not terminated by endMarker is ignored
+    toggleLED();
+    
+    switch(c){
+    case 'T':
+      Serial.write("Signal Received\n");
+    break;
+    case START_STREAM:
+      test = startListenMode(COM_STATE_LISTEN_STREAM, -1);
+    break;
+    case YELL_COM:
+      test = startListenMode(COM_STATE_LISTEN_BURST, 4);//[OP][META][META][META]
+    break;
+    case YELL_8:
+      test = startListenMode(COM_STATE_LISTEN_BURST, 8);
+    break;
+    case YELL_32:
+      test = startListenMode(COM_STATE_LISTEN_BURST, 32);
+    break;
+    case YELL_64:
+      test = startListenMode(COM_STATE_LISTEN_BURST, 64);
+    break;
+    default:
+      test = false;
       break;
+    }
+
+    if (test){
+      delay(100);
+      Serial.write("Command Accepted\n");
     } else {
-      argStr[idx++] = bff;
+      delay(100);
+      Serial.write("Failed to interpret data\n"); 
     }
   }
 }
 
-void toggleLED(){
-  int from, to, delta;
+void processData(){
+  
+}
 
-  if (state){
-    to = 0;
-    from = numTones - 1;
-    delta = -1;
-  } else {
-    to = numTones;
-    from = 0;
-    delta = 1;
-  }
-  
-  Serial.read();
-  noTone(audPin);
-  
+void loop() {  
+  handleStream();
+}
+
+void toggleLED(){
   state = !state;
   digitalWrite(ledPin, state ? HIGH: LOW);
   Serial.write(state?msgActive:msgInActive);
 
-  for (int i = from; i != to; i += delta)
-  {
-   tone(audPin, tones[i]);
-   delay(100);
-  }
-
-  noTone(audPin);
-}
-
-void processData(){
-
-  switch(opCode){
-    
-    case 0: return;
-    case 'T':
-      Serial.println("Test Received\n");
-    break;
-    case 'L':
-      toggleLED();
-    break;
-  }
-
-    dataReceived = false;
-    argStr[0] = 0;
-    opCode = 0;
-}
-
-void loop() {  
-  receiveData();
-  processData();
+  playToneArray(audPin, tones, numTones, 100);
 }

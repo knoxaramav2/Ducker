@@ -44,17 +44,17 @@ void handleStream(){
   
   if (isInReadState()){
     //read from stream until end marker detected
-    Serial.write("In read state\n");
+    //Serial.write("In read state\n");
   } else if (c != 0 && c != '\n') {
     //test byte against command codes
-    Serial.write("Checking command\n");
+    //Serial.write("Checking command\n");
     bool test = true;
 
     toggleLED();
     
     switch(c){
     case 'T':
-      Serial.write("Signal Received\n");
+      //Serial.write("Signal Received\n");
     break;
     case START_STREAM:
       test = startListenMode(COM_STATE_LISTEN_STREAM, -1);
@@ -78,10 +78,10 @@ void handleStream(){
 
     if (test){
       delay(100);
-      Serial.write("Command Accepted\n");
+      //Serial.write("Command Accepted\n");
     } else {
       delay(100);
-      Serial.write("Failed to interpret data\n"); 
+      //Serial.write("Failed to interpret data\n"); 
     }
   }
 }

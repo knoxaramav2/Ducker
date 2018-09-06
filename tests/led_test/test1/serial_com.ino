@@ -22,18 +22,25 @@ byte checkSerial(){
   }
 
   clearMeta();
+  clearListenMode();
 
-  for (int i = 0; i < 4 && Serial.available()>0; ++i){
+  Serial.write("VALUE RECEIVED\n");
+
+  delay(100);
+
+  for (int i = 0; i < COMM_BUFFER_SIZE && Serial.available() > 0; ++i){
     _meta[i] = Serial.read();
     _bytesReadCounter++;
+
+    Serial.write(_meta[i]);
+
+    if (_meta[i] == '\n') {break;}
   }
 
-  char msg [5];
-  itoa(_bytesReadCounter, msg, 10);
-  
-  Serial.write(msg);
+  Serial.write(_meta, _bytesReadCounter);
   delay(100);
-  Serial.write('\n');
+
+  Serial.write("VALUE SAVED\n");
 
   return _meta[0]; 
 }

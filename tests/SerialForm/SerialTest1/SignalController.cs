@@ -15,13 +15,18 @@ namespace SerialTest1
         SerialPort serialPort;
         RichTextBox viewWindow;
 
+        string lastResponse = "";
+
+        private char[] signalBuffer = new char[256];
+        int bufferIndex = 0;
+
         public SignalController()
         {
             state = COM_STATE.COM_STATE_IDLE;
             
             streamListener = new Timer
             {
-                Interval = 100
+                Interval = 10
             };
             streamListener.Tick += new EventHandler(ListenStream);
         }
@@ -36,7 +41,7 @@ namespace SerialTest1
 
             streamListener.Enabled = true;
 
-            serialPort.ReadTimeout = 1000;
+            serialPort.ReadTimeout = 2000;
 
             return true;
         }
@@ -67,11 +72,23 @@ namespace SerialTest1
                         return;
                     }
 
-                    string msg = serialPort.ReadLine();
-
-                    viewWindow.Text += msg + Environment.NewLine;
+                    string msg = serialPort.ReadExisting();//serialPort.ReadLine();
+                    msg = msg;
+                    lastResponse = msg;
                     serialPort.Close();
-                } catch (TimeoutException ex)
+
+                    viewWindow.AppendText(msg);
+                    viewWindow.AppendText(Environment.NewLine);
+
+                    foreach(char c in lastResponse)
+                    {
+                        Console.Write(((int)c).ToString("X") + " ");
+                       
+                    }
+
+                    Console.WriteLine();
+                }
+                catch (TimeoutException ex)
                 {
                     viewWindow.Text += ex +
                         Environment.NewLine;
@@ -86,16 +103,56 @@ namespace SerialTest1
             }
         }
 
-        public bool SendData(String data)
+        private void ClearBuffer()
         {
+            bufferIndex = 0;
+            Array.Clear(signalBuffer, 0, 256);
+        }
+
+        public bool AppendToBuffer(String data)
+        {
+            foreach (char c in data)
+            {
+                if (bufferIndex == 255) { return false; }
+                signalBuffer[bufferIndex++] = c;
+            }
+
+            return true;
+        }
+
+        public bool AppendToBuffer(char[] data)
+        {
+            foreach (char c in data)
+            {
+                if (bufferIndex == 255) { return false; }
+                signalBuffer[bufferIndex++] = c;
+            }
+
+            return true;
+        }
+
+        public bool AppendToBuffer(byte[] data)
+        {
+            foreach (byte c in data)
+            {
+                if (bufferIndex == 255) { return false; }
+                signalBuffer[bufferIndex++] = (char) c;
+            }
+
+            return true;
+        }
+
+        public bool SendData()
+        {
+            signalBuffer[bufferIndex] = '\n';
+
             if (!serialPort.IsOpen)
             {
                 try
                 {
                     serialPort.Open();
-                    serialPort.Write(data);
+                    serialPort.Write(signalBuffer, 0, bufferIndex);
                     serialPort.Close();
-                    Console.WriteLine(data);
                 }
                 catch (Exception exc)
                 {
@@ -104,6 +161,8 @@ namespace SerialTest1
                     return false;
                 }
             }
+
+            ClearBuffer();
 
             return true;
         }

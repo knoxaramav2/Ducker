@@ -27,5 +27,11 @@ void initComms();
 byte checkSerial();
 bool isInReadState();
 bool startListenMode(short mode, short expectedStreamSize);
+bool isTaskCompleted();
+void sendBuffered();
+int readNext();
+
+void endListenMode();
+void clearListenMode();
 
 #endif

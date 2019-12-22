@@ -8,7 +8,7 @@ int audPin = 12;
 int ledPin = 13;
 int phoPin = A0;
 
-int numTones = 10;
+int numTones = 1;
 int tones[] = {261, 277, 294, 311, 330, 349, 370, 392, 415, 440};
 int photoVal = 0;
 
@@ -45,6 +45,20 @@ void handleStream(){
   if (isInReadState()){
     //read from stream until end marker detected
     //Serial.write("In read state\n");
+    int i = readNext();
+
+    if (i > 0){
+      Serial.write(i);
+    }
+    Serial.flush();
+
+    if (isTaskCompleted()){
+      sendBuffered();
+      Serial.write("COMPLETE");
+      clearListenMode();
+    }
+
+    return;
   } else if (c != 0 && c != '\n') {
     //test byte against command codes
     //Serial.write("Checking command\n");
@@ -54,7 +68,14 @@ void handleStream(){
     
     switch(c){
     case 'T':
-      //Serial.write("Signal Received\n");
+      Serial.write("TEST COMMAND RECIEVED");
+      startListenMode(COM_STATE_LISTEN_STREAM, 20);
+
+      if (getComState() == COM_STATE_LISTEN_STREAM){
+        Serial.write("NOW READING STREAM");
+      } else {
+        Serial.write("FAILED TO START STREAM");
+      }
     break;
     case START_STREAM:
       test = startListenMode(COM_STATE_LISTEN_STREAM, -1);
@@ -77,10 +98,10 @@ void handleStream(){
     }
 
     if (test){
-      delay(100);
+      //delay(100);
       //Serial.write("Command Accepted\n");
     } else {
-      delay(100);
+      //delay(100);
       //Serial.write("Failed to interpret data\n"); 
     }
   }
@@ -97,7 +118,7 @@ void loop() {
 void toggleLED(){
   state = !state;
   digitalWrite(ledPin, state ? HIGH: LOW);
-  Serial.write(state?msgActive:msgInActive);
+  //Serial.write(state?msgActive:msgInActive);
 
   playToneArray(audPin, tones, numTones, 100);
 }

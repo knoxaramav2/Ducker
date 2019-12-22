@@ -6,8 +6,13 @@ short _comState = COM_STATE_IDLE;
 unsigned _expectedStreamSize = 0;//set to -1 for unknown stream size
 unsigned _bytesReadCounter = 0;//used to track bytes read in current exchange
 
+//should only remain true for an instant
+//turn to false immediately after checking
+bool _readExpectedBytes = false;
+
 void initComms(){
   Serial.begin(9600);
+  while(!Serial){}
   memset(_buffer, 0, COMM_BUFFER_SIZE);
   memset(_meta, 0, META_WIDTH);
 }
@@ -24,23 +29,10 @@ byte checkSerial(){
   clearMeta();
   clearListenMode();
 
-  Serial.write("VALUE RECEIVED\n");
-
-  delay(100);
-
-  for (int i = 0; i < COMM_BUFFER_SIZE && Serial.available() > 0; ++i){
+  for (int i = 0; i < META_WIDTH && Serial.available() > 0; ++i){
     _meta[i] = Serial.read();
     _bytesReadCounter++;
-
-    Serial.write(_meta[i]);
-
-    if (_meta[i] == '\n') {break;}
   }
-
-  Serial.write(_meta, _bytesReadCounter);
-  delay(100);
-
-  Serial.write("VALUE SAVED\n");
 
   return _meta[0]; 
 }
@@ -58,6 +50,23 @@ bool startListenMode(short mode, short expectedStreamSize){
       }
 
   return false;
+}
+
+bool isTaskCompleted(){
+  if (_readExpectedBytes){
+    _readExpectedBytes = false;
+    return true;
+  }
+
+  return false;
+}
+
+void sendBuffered(){
+  for(int i = 0; i < _bytesReadCounter; ++i){
+    Serial.write(_buffer[i]);
+  }
+
+  Serial.flush();
 }
 
 //set to idle mode and preserve data buffers
@@ -95,19 +104,37 @@ int readNext(){
 
   int bytesRead = 0;
 
+  for (;Serial.available(); ++_bytesReadCounter){
+    _buffer[_bytesReadCounter] = Serial.read();
+    bytesRead++;
+
+    if (_comState == COM_STATE_LISTEN_STREAM && _expectedStreamSize >= 0){
+      break;
+    }
+  }
+
+  Serial.write(_bytesReadCounter);
+  Serial.write(" of ");
+  Serial.write(_expectedStreamSize);
+  Serial.write("\r\n");
+
+  Serial.flush();
+
   //switch for future extension
   switch(_comState){
     case COM_STATE_LISTEN_BURST:
-    
+      _readExpectedBytes = true;
+      Serial.write("STREAM COMPLETE");
+      Serial.flush();
     break;
     case COM_STATE_LISTEN_STREAM:
-      
+      if (_bytesReadCounter >= _expectedStreamSize){
+        _readExpectedBytes = true;
+      }
     break;
   }
-
-  _bytesReadCounter += bytesRead;
   
-  return 0;
+  return bytesRead;
 }
 
 byte getOpCode(){

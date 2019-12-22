@@ -36,6 +36,9 @@ namespace SerialTest1
 
         private void Button1_Click(object sender, EventArgs e)
         {
+
+            //viewWindow.Text = "";
+            
             //var stream = audio.TextToAudioStream("hello maggots");
             char[] stream = new char[4];
             stream[0] = 'T';//SignalCodes.YELL_8;
@@ -43,15 +46,8 @@ namespace SerialTest1
             stream[2] = 'I';
             stream[3] = '\0';
 
-            /*byte[] tStream = new byte[256];
-            for (int i = 0; i < 256; ++i)
-            {
-                tStream[i] = stream[i];
-            }*/
-
-            signalController.SendData(new string(stream));
-            //SendMessage(tStream.ToString());
-            //Console.WriteLine(tStream.ToString());
+            signalController.AppendToBuffer(stream);
+            signalController.SendData();
         }
 
         private void Button2_Click(object sender, EventArgs e)
@@ -63,7 +59,8 @@ namespace SerialTest1
         {
             if (e.KeyChar == '\n' || e.KeyChar == '\r')
             {
-                signalController.SendData(commandLine.Text);
+                signalController.AppendToBuffer(commandLine.Text);
+                signalController.SendData();
                 commandLine.Text = "";
             } else if (e.KeyChar == (char) Keys.Back && commandLine.Text.Length > 0)
             {
@@ -71,7 +68,7 @@ namespace SerialTest1
             }
         }
 
-        private void viewWindow_TextChanged(object sender, EventArgs e)
+        private void ViewWindow_TextChanged(object sender, EventArgs e)
         {
             viewWindow.SelectionStart = viewWindow.Text.Length;
             viewWindow.ScrollToCaret();

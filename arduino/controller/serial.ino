@@ -1,14 +1,18 @@
 #include <string.h>
 
-byte * cache;
-unsigned short cacheSize;
+#define END_TRANSMIT_ASCII 0x04
+
+char * _cache;
+char * _safeCache;
+unsigned short _cacheSize;
+unsigned short _streamIndex; 
 
 void setupStreamService(unsigned short size){
-  cacheSize = size;
-  cache = new byte[cacheSize];
+  _cacheSize = size;
+  _cache = new char[_cacheSize];
+  _safeCache = new char[_cacheSize];
 }
 
-void writeSerial(){
-  Serial.write("XXX");
-  Serial.flush();
+char * readFlush(){
+  
 }

@@ -1,9 +1,9 @@
-/*
-#include "headers/audio.h"
-#include "headers/file.h"
-#include "headers/motor.h"
-#include "headers/comm.h"
-*/
+
+
+char header[]="START\0";
+char footer[]="END\0";
+
+
 
 void setup(){
   Serial.begin(9600);
@@ -13,11 +13,13 @@ void setup(){
 }
 
 void loop(){
-  digitalWrite(13,HIGH);
-  digitalWrite(8,LOW);
-  writeSerial();
-  delay(200);
-  digitalWrite(13,LOW);
-  digitalWrite(8,HIGH);
-  delay(200);
+  if (Serial.available()){
+    
+    char * msg = readFlush();
+    Serial.println(len(msg));
+    Serial.println(msg);
+    //writeSerial(header);
+    //writeSerial(msg);
+    //writeSerial(footer);
+  }
 }

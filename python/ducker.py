@@ -17,11 +17,15 @@ keepAlive = True
 arduino.readline()
 
 while (keepAlive):
+
     msg = arduino.readline()
-    s = ""
-    if (len(msg)==0):
+    if (len(msg)!=0):
+        print(">>Sup.")
+        arduino.write("Sup.")
         continue
-    
+        
+    s = ""
     for c in msg:
         s += chr(c)
-    print(s)
+    if (len(s)!=0):
+        print('<<'+s)
